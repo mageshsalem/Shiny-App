@@ -1,0 +1,91 @@
+---
+title: 'Course Project: Shiny Application and Reproducible Pitch'
+author: "Magesh Sunder R"
+date: "03 Nov 2020"
+output: ioslides_presentation
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## About the Course Project
+
+This is a deliverable for the course Developing Data Products as part of the Coursera Data Science Specialization.
+
+Instructions:
+
+1. Write a shiny application with associated supporting documentation. The documentation should be thought of as whatever a user will need to get started using your application.
+2. Deploy the application on Rstudio's shiny server
+3. Share the application link by pasting it into the provided text box
+4. Share your server.R and ui.R code on github
+
+## How to use the application
+
+Using the data provided by GOI Health Ministry, we plot the Locations of the Blood Banks in Tamil Nadu State of India using the Latitudes and Longitudes.
+
+The application is running in (https://mageshsalem.shinyapps.io/my_assignment/)
+
+ui.R, and Server.R Code in my github repository (https://github.com/mageshsalem/Shiny-App)
+
+## Blood Bank Directory (Filtered for one State)
+
+The data used in the app comes from the Government of India Website. 
+
+```{r summary}
+library(shiny)
+
+library(dplyr)
+
+library(leaflet)
+
+library(DT)
+  
+  bb_data <- read.csv("blood-banks_raw_tn.csv", stringsAsFactors = FALSE )
+  bb_data <- data.frame(bb_data)
+  bb_data$Latitude <-  as.numeric(bb_data$Latitude)
+  bb_data$Longitude <-  as.numeric(bb_data$Longitude)
+  bb_data=filter(bb_data, Latitude != "NA") # removing NA values
+  
+```
+
+## Map
+the Map displays the Locations of the Blood Banks Visually. if You are not able to view it here kindly click the link below
+https://mageshsalem.shinyapps.io/my_assignment/
+
+```{r leaflet}
+ # new column for the popup label
+  
+  bb_data <- mutate(bb_data, cntnt=paste0('<strong>Name: </strong>',Blood.Bank.Name,
+                                          '<br><strong>State:</strong> ', City,
+                                          '<br><strong>Time:</strong> ', Service.Time,
+                                          '<br><strong>Mobile:</strong> ',Mobile,
+                                          '<br><strong>HelpLine:</strong> ',Helpline,
+                                          '<br><strong>Contact1:</strong> ',Contact.No,
+                                          '<br><strong>Email:</strong> ',Email,
+                                          '<br><strong>Website:</strong> ',Website)) 
+
+  # create a color paletter for category type in the data file
+  
+  pal <- colorFactor(pal = c("#1b9e77", "#d95f02", "#7570b3"), domain = c("Charity", "Government", "Private"))
+
+  leafletOutput("bbmap", height=1000)
+
+  # create the leaflet map  
+  renderLeaflet({
+      leaflet(bb_data) %>% 
+      addCircles(lng = ~Longitude, lat = ~Latitude) %>% 
+      addTiles() %>%
+      addCircleMarkers(data = bb_data, lat =  ~Latitude, lng =~Longitude, 
+                       radius = 3, popup = ~as.character(cntnt), 
+                       color = ~pal(Category),
+                       stroke = FALSE, fillOpacity = 0.8)%>%
+      addLegend(pal=pal, values=bb_data$Category,opacity=1, na.label = "Not Available")%>%
+      addEasyButton(easyButton(
+        icon="fa-crosshairs", title="ME",
+        onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
+        })
+  
+```
+
